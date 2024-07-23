@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Vector;
 
+import static java.lang.System.exit;
+
 public class Main {
     private static final int PORT = 8100;
     private static final ServerState serverState = new ServerState();
@@ -24,7 +26,7 @@ public class Main {
             serverState.stopIfCheck(uIn.equals("exit"));
         }
 
-        stopServer();
+        exit(1);
     }
 
     private static void startServer() {
