@@ -3,7 +3,6 @@ package de.froschcraft;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.regex.PatternSyntaxException;
 
 import static java.lang.System.exit;
 
@@ -13,7 +12,7 @@ public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static Vector<Message> messages;
 
-    private static CommandHandler commandHandler = new CommandHandler(serverState);
+    private static final CommandHandler commandHandler = new CommandHandler(serverState);
 
     public static void main(String[] args) {
         // Erstelle Thread für den Server und warte auf Nutzereingabe.
@@ -85,6 +84,7 @@ public class Main {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private static void parseRequest(Map<String, String> requestMap, BufferedReader in, PrintWriter out) {
         URIParser uriParser;
 
@@ -123,12 +123,12 @@ public class Main {
                     }
                 }
 
-                sendResponse(out);
                 break;
             case "GET":
-                sendResponse(out);
+
                 break;
         }
+        sendResponse(out);
     }
 
     private static void sendResponse(PrintWriter out) {

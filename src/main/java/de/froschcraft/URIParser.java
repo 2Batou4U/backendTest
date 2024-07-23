@@ -1,6 +1,5 @@
 package de.froschcraft;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -27,13 +26,13 @@ public class URIParser {
             this.httpVersion = requestArray[2];
 
             this.queryParams = parseQueryParams(uri.getQuery());
-        } catch (UnsupportedEncodingException | URISyntaxException e) {
+        } catch (URISyntaxException e) {
             System.out.println("Die Parameter konnten nicht gelesen werden.");
         }
     }
 
     // Methode zum Parsen der Query-Parameter
-    private Map<String, String> parseQueryParams(String query) throws UnsupportedEncodingException {
+    private Map<String, String> parseQueryParams(String query) {
         Map<String, String> queryParams = new HashMap<>();
 
         if (query == null || query.isEmpty()) {

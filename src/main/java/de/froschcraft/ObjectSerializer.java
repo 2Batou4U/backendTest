@@ -34,7 +34,7 @@ class ObjectSerializer {
         } catch (EOFException e){
             System.out.printf("Ende der Datei %s erreicht.%n", file);
         } catch (IOException e) {
-            System.out.printf("Auf %s konnte nicht zugegriffen werden.%n");
+            System.out.printf("Auf %s konnte nicht zugegriffen werden.%n", file);
         }
 
         return messages;
