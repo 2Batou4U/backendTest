@@ -76,6 +76,10 @@ public class URIParser {
         return this.uri.getPath();
     }
 
+    public Boolean checkPath(String path) {
+        return this.getPath().equals(path);
+    }
+
     public Map<String, String> getQueryParams() {
         return queryParams;
     }
