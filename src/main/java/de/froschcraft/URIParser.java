@@ -14,7 +14,7 @@ public class URIParser {
     private String httpVersion;
     private Map<String, String> queryParams;
 
-    public URIParser(String requestString) {
+    public URIParser(String requestString) throws NullPointerException {
         String[] requestArray = requestString.split(" ");
 
         if (requestArray.length != 3) {

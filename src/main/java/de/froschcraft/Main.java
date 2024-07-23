@@ -2,9 +2,8 @@ package de.froschcraft;
 
 import java.io.*;
 import java.net.*;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.Vector;
+import java.util.*;
+import java.util.regex.PatternSyntaxException;
 
 import static java.lang.System.exit;
 
@@ -14,6 +13,8 @@ public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static Vector<Message> messages;
 
+    private static CommandHandler commandHandler = new CommandHandler(serverState);
+
     public static void main(String[] args) {
         // Erstelle Thread für den Server und warte auf Nutzereingabe.
         Thread serverThread = new Thread(Main::startServer);
@@ -21,10 +22,9 @@ public class Main {
 
         System.out.println("Server läuft und hört auf Eingaben.");
 
-        while (serverState.isRunning()){
-            String uIn = scanner.nextLine();
-            serverState.stopIfCheck(uIn.equals("exit"));
-        }
+        do {
+            commandHandler.handleInput(scanner.nextLine());
+        } while (serverState.isRunning());
 
         exit(1);
     }
@@ -37,7 +37,7 @@ public class Main {
             // Lies die Nachrichten in den Speicher, für späteren Zugriff durch Client.
             messages = ObjectSerializer.deserializeMessages("users.ser");
             serverState.setRunning();
-            System.out.printf("Server läuft auf Port %d.%n", PORT);
+            System.out.printf("Server läuft auf http://localhost:%d.%n", PORT);
 
             while (serverState.isRunning()) {
                 try {
@@ -61,31 +61,72 @@ public class Main {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), false)
         ) {
+
+            Map<String, String> requestMap = new HashMap<>();
+
+            // Get the initial Request info.
             String requestLine = in.readLine();
-            if (requestLine != null && !requestLine.isEmpty()) {
-                System.out.printf("Anfrage erhalten: %s%n", requestLine);
-                parseRequest(requestLine);
-                sendResponse(out);
+            requestMap.put("Request", requestLine);
+
+            while ((requestLine = in.readLine()) != null && !requestLine.isEmpty()) {
+                // Get the remaining info.
+                String[] requestParts = requestLine.split(":");
+
+                requestMap.put(requestParts[0].strip(), requestParts[1].strip());
             }
+
+            System.out.printf("Anfrage erhalten: %s%n", requestMap.get("Request"));
+
+            parseRequest(requestMap, in, out);
+
+
         } catch (IOException e) {
             System.out.println("IO-Streams konnten nicht gelesen werden.");
         }
     }
 
-    private static void parseRequest(String requestLine) {
-        URIParser uriParser = new URIParser(requestLine);
+    private static void parseRequest(Map<String, String> requestMap, BufferedReader in, PrintWriter out) {
+        URIParser uriParser;
+
+        try {
+            uriParser = new URIParser(requestMap.get("Request"));
+        } catch (NullPointerException e) {
+            System.out.println("Anfrage konnte nicht bearbeitet werden.");
+            return;
+        }
+
 
         switch (uriParser.getMethod()) {
             case "POST":
-                Map<String, String> params = uriParser.getQueryParams();
+                // Fetch the body.
+                int contentLength = Integer.parseInt(requestMap.get("Content-Length"));
 
-                String message = params.get("message");
-                if (message != null && !message.isEmpty()) {
-                    messages.add(new Message(params.get("message")));
+                if (contentLength > 0) {
+                    char[] buffer = new char[contentLength];
+
+                    try {
+                        in.read(buffer, 0, contentLength);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    String bodyString = String.valueOf(buffer);
+
+                    Map <String, String> bodyMap = new HashMap<>();
+                    for (String bodyParam: bodyString.split("&")) {
+                        String[] keyValue = bodyParam.split("=");
+                        bodyMap.put(keyValue[0], keyValue[1]);
+                    }
+
+                    if (bodyMap.containsKey("message")) {
+                        messages.add(new Message(bodyMap.get("message")));
+                    }
                 }
 
+                sendResponse(out);
                 break;
             case "GET":
+                sendResponse(out);
                 break;
         }
     }
@@ -96,10 +137,12 @@ public class Main {
         out.println();
         out.println("<html><body>");
         out.println("<h1>Hello, World!</h1>");
+
         for (Message message : messages){
             out.println("<p>" + message.toString() + "</p>");
         }
-        out.println("<form method=\"POST\" action=\"/submit\"> <input type=\"text\" name=\"message\" value=\"\"> <input type=\"submit\" value=\"Post\"> </form>");
+
+        out.println("<form method=\"POST\" action=\"/message\"> <input type=\"text\" name=\"message\" value=\"\"> <input type=\"submit\" value=\"Post\"> </form>");
         out.println("</body></html>");
         out.flush();
     }
