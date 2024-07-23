@@ -96,18 +96,17 @@ public class Main {
                 );
             }
 
-            // Logging output.
-            System.out.printf(
-                    "Anfrage erhalten: %s%n",
-                    requestMap.get("Request")
-            );
-
             // Pass the data for further transformation.
-            parseRequest(
-                    requestMap,
-                    in,
-                    out
-            );
+            try {
+                parseRequest(
+                        requestMap,
+                        in,
+                        out
+                );
+            } catch (NullPointerException e) {
+                System.out.println(e.getMessage());
+            }
+
 
 
         } catch (IOException e) {
@@ -126,16 +125,17 @@ public class Main {
             Map<String, String> requestMap,
             BufferedReader in,
             PrintWriter out
-    ) {
+    ) throws NullPointerException {
         // Try and parse the Request Header.
         URIParser uriParser;
 
-        try {
-            uriParser = new URIParser(requestMap.get("Request"));
-        } catch (NullPointerException e) {
-            System.out.println("Anfrage konnte nicht bearbeitet werden.");
-            return;
-        }
+        String request = Objects.requireNonNull(requestMap.get("Request"), "Anfrage konnte nicht bearbeitet werden");
+
+        uriParser = new URIParser(request);
+        System.out.printf(
+                "Anfrage erhalten: %s%n",
+                requestMap.get("Request")
+        );
 
         // Check method.
         switch (uriParser.getMethod()) {
