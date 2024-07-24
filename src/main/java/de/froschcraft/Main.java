@@ -181,6 +181,10 @@ public class Main {
 
                 break;
             case "GET":
+                // Why the copy? I don't know.
+                if (!uriParser.getQueryParams().isEmpty()) {
+                    System.out.println(uriParser.getQueryParams());
+                }
 
                 break;
         }
