@@ -41,7 +41,7 @@ public class Main {
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             // Load messages.
-            messages = ObjectSerializer.deserializeMessages("users.ser");
+            messages = ObjectSerializer.deserializeMessages("messages.ser");
             serverState.setRunning();
 
             // Console hint on successful startup.
@@ -222,7 +222,7 @@ public class Main {
     private static void stopServer() {
         serverState.setStopping();
 
-        ObjectSerializer.serializeMessages(messages, "users.ser");
+        ObjectSerializer.serializeMessages(messages, "messages.ser");
 
         try {
             new Socket(
