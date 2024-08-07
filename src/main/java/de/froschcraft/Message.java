@@ -11,9 +11,11 @@ public class Message implements Serializable {
 
     private final String message;
     private final ZonedDateTime dateTime;
+    private final User user;
 
-    public Message(String message) {
+    public Message(String message, User user) {
         this.message = message;
+        this.user = user;
         this.dateTime = ZonedDateTime.now(ZoneId.systemDefault());
     }
 
@@ -25,7 +27,11 @@ public class Message implements Serializable {
         return this.dateTime;
     }
 
+    public User getUser() {
+        return this.user;
+    }
+
     public String toString(){
-        return String.format("%s: %s", this.getDate(), this.getMessage());
+        return String.format("%s schrieb am %s: %s", this.getUser(), this.getDate(), this.getMessage());
     }
 }
