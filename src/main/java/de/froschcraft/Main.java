@@ -10,8 +10,8 @@ public class Main {
     private static final int PORT = 8100;
     private static final ServerState serverState = new ServerState();
     private static final Scanner scanner = new Scanner(System.in);
-    private static Vector<Message> messages;
-    private static HashMap<String, User> users;
+
+    private static ServerData serverData;
 
     private static final CommandHandler commandHandler = new CommandHandler(serverState);
 
@@ -41,22 +41,14 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread(Main::stopServer));
 
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            // Load messages.
-            messages = ObjectSerializer.deserializeMessages("messages.ser");
-            // Load users.
-            users = ObjectSerializer.deserializeUsers("users.ser");
+            // Load messages and users.
+            serverData = new ServerData(
+                    ObjectSerializer.deserializeMessages("messages.ser"),
+                    ObjectSerializer.deserializeUsers("users.ser")
+            );
 
-            // Dummy data.
-            if (users == null) {
-                users = new HashMap<>();
-                User adrian = new User("adrian", "123");
-                users.put(adrian.getUsername(), adrian);
-            }
-
-            if (messages == null) {
-                messages = new Vector<>();
-                messages.add(new Message("Test", users.get("adrian")));
-            }
+            // Create dummy data *if* objects are empty.
+            serverData.dummyData();
 
             serverState.setRunning();
 
@@ -159,41 +151,32 @@ public class Main {
                 // Fetch the body if it exists.
                 int contentLength = Integer.parseInt(requestMap.get("Content-Length"));
 
-                if (contentLength > 0) {
-                    // Create buffer and pass it to read() function so it can be filled with the actual body.
-                    char[] buffer = new char[contentLength];
-
-                    try {
-                        in.read(
-                                buffer,
-                                0,
-                                contentLength
-                        );
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    // Convert the char array into string.
-                    Map<String, String> bodyMap = getStringStringMap(buffer);
-
-                    /*
-                     * Future if-elif-else structure. Currently only posting messages is supported.
-                     */
-                    if (
-                            bodyMap.containsKey("message") &&
-                                    bodyMap.containsKey("username") &&
-                                    uriParser.checkPath("/message")
-                    ) {
-                        // Get user:
-                        String username = bodyMap.get("username");
-                        User user = users.get(username);
-                        messages.add(new Message(bodyMap.get("message"), user));
-                    }
+                if (contentLength <= 0) {
+                    throw new IllegalArgumentException("POST request has to contain a body.");
                 }
 
-                break;
-            case "GET":
+                // Create buffer and pass it to read() function so it can be filled with the actual body.
+                char[] buffer = new char[contentLength];
 
+                try {
+                    in.read(
+                            buffer,
+                            0,
+                            contentLength
+                    );
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+                // Convert the char array into string.
+                Map<String, String> bodyMap = getStringStringMap(buffer);
+
+                // Pass the request to buffer
+                POSTRouter.routePath(bodyMap, uriParser, serverData);
+                break;
+
+            case "GET":
+                GETRouter.routePath(uriParser);
                 break;
         }
         sendResponse(out);
@@ -229,15 +212,24 @@ public class Main {
         out.println("Content-Type: text/html");
         out.println();
         out.println("<html><body>");
+
+        out.println("<h1>Login</h1>");
+
+        out.println("<form method=\"GET\" action=\"/login\">");
+        out.println("<input type=\"text\" name=\"username\" value=\"\">");
+        out.println("<input type=\"password\" name=\"password\" value=\"\">");
+        out.println("<input type=\"submit\" value=\"Anmelden\"> ");
+        out.println("</form>");
+
         out.println("<h1>Message-Board</h1>");
 
-        for (Message message : messages){
+        for (Message message : serverData.getMessages()){
             out.println("<p>" + message.toString() + "</p>");
         }
 
         out.println("<form method=\"POST\" action=\"/message\">");
         out.println("<input type=\"text\" name=\"message\" value=\"\"> <input type=\"submit\" value=\"Post\"> ");
-        out.printf("<input type=\"hidden\" name=\"username\" value=\"%s\">", users.get("adrian"));
+        out.printf("<input type=\"hidden\" name=\"username\" value=\"%s\">%n", serverData.getUser("adrian"));
         out.println("</form>");
         out.println("</body></html>");
         out.flush();
@@ -249,8 +241,8 @@ public class Main {
     private static void stopServer() {
         serverState.setStopping();
 
-        ObjectSerializer.serializeMessages(messages, "messages.ser");
-        ObjectSerializer.serializeUsers(users, "users.ser");
+        ObjectSerializer.serializeMessages(serverData.getMessages(), "messages.ser");
+        ObjectSerializer.serializeUsers(serverData.getUsers(), "users.ser");
         try {
             new Socket(
                     "localhost",

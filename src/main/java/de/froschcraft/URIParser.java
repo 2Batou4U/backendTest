@@ -31,7 +31,7 @@ public class URIParser {
         }
     }
 
-    // Methode zum Parsen der Query-Parameter
+    // Method for parsing query params.
     private Map<String, String> parseQueryParams(String query) {
         Map<String, String> queryParams = new HashMap<>();
 
