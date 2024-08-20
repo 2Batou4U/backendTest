@@ -44,7 +44,8 @@ public class Main {
             // Load messages and users.
             serverData = new ServerData(
                     ObjectSerializer.deserializeMessages("messages.ser"),
-                    ObjectSerializer.deserializeUsers("users.ser")
+                    ObjectSerializer.deserializeUsers("users.ser"),
+                    HTMLBuilder.getInstance()
             );
 
             // Create dummy data *if* objects are empty.

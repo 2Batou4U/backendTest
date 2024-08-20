@@ -1,5 +1,6 @@
 package de.froschcraft;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -9,6 +10,7 @@ import java.util.Vector;
 public class ServerData {
     private Vector<Message> messages;
     private HashMap<String, User> users;
+    private HTMLBuilder htmlBuilder = HTMLBuilder.getInstance();
 
     /**
      * Standard constructor. Usually takes parameters straight from the deserializer.
@@ -17,10 +19,12 @@ public class ServerData {
      */
     public ServerData(
             Vector<Message> messages,
-            HashMap<String, User> users
+            HashMap<String, User> users,
+            HTMLBuilder htmlBuilder
     ) {
         this.messages = messages;
         this.users = users;
+        this.htmlBuilder = htmlBuilder;
     }
 
     /**
@@ -91,6 +95,15 @@ public class ServerData {
      */
     public Boolean userExists(String username) {
         return this.users.containsKey(username);
+    }
+
+    /**
+     * Returns the template path to a given template name.
+     * @param templateName String value for the map.
+     * @return Path to template.
+     */
+    public Path getTemplate(String templateName) {
+        return this.htmlBuilder.getTemplate(templateName);
     }
 
     /**
